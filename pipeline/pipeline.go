@@ -11,12 +11,6 @@ type Middleware interface {
 	Intercept(Pipeline) (*http.Response, error)
 }
 
-type MiddlewareFunc func(Pipeline) (*http.Response, error)
-
-func (f MiddlewareFunc) Intercept(pipeline Pipeline) (*http.Response, error) {
-	return f(pipeline)
-}
-
 type customTransport struct {
 	http.Transport
 	transport   http.RoundTripper
