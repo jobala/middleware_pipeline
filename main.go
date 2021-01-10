@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
+	"net/http/httputil"
 	"time"
 
 	"github.com/jobala/middleware_pipeline/pipeline"
@@ -12,18 +14,20 @@ type StarsMiddleware struct{}
 type HashMiddleware struct{}
 
 func (s StarsMiddleware) Intercept(pipeline pipeline.Pipeline) (*http.Response, error) {
-	fmt.Println("*******************")
-
 	req := pipeline.Request()
+	req.Header.Add("Authorization", "Bearer token")
 
+	body, _ := httputil.DumpRequest(req, true)
+	log.Println(fmt.Sprintf("%s", string(body)))
 	return pipeline.Next(req)
 }
 
 func (h HashMiddleware) Intercept(pipeline pipeline.Pipeline) (*http.Response, error) {
-	fmt.Println("####################")
-
 	req := pipeline.Request()
+	req.Header.Add("Content-Type", "application/json")
 
+	body, _ := httputil.DumpRequest(req, true)
+	log.Println(fmt.Sprintf("%s", string(body)))
 	return pipeline.Next(req)
 }
 

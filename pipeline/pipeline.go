@@ -24,35 +24,34 @@ func NewCustomTransport(middlewares ...Middleware) *customTransport {
 	}
 }
 
-type middlewareChain struct {
+type middlewarePipeline struct {
 	middlewareIndex int
 	transport       http.RoundTripper
 	request         *http.Request
 	middlewares     []Middleware
 }
 
-func (chain *middlewareChain) Request() *http.Request {
-	return chain.request
+func (pipeline *middlewarePipeline) Request() *http.Request {
+	return pipeline.request
 }
 
-func (chain *middlewareChain) Next(req *http.Request) (*http.Response, error) {
-	if chain.middlewareIndex < len(chain.middlewares) {
-		c := &middlewareChain{
-			middlewareIndex: chain.middlewareIndex + 1,
-			middlewares:     chain.middlewares,
-			transport:       chain.transport,
-			request:         req,
-		}
+func (pipeline *middlewarePipeline) incrementMiddlewareIndex() {
+	pipeline.middlewareIndex++
+}
 
-		middleware := chain.middlewares[chain.middlewareIndex]
-		return middleware.Intercept(c)
+func (pipeline *middlewarePipeline) Next(req *http.Request) (*http.Response, error) {
+	if pipeline.middlewareIndex < len(pipeline.middlewares) {
+		middleware := pipeline.middlewares[pipeline.middlewareIndex]
+
+		pipeline.incrementMiddlewareIndex()
+		return middleware.Intercept(pipeline)
 	}
 
-	return chain.transport.RoundTrip(req)
+	return pipeline.transport.RoundTrip(req)
 }
 
-func (customTransport customTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	chain := &middlewareChain{
+func (customTransport *customTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	pipeline := &middlewarePipeline{
 		middlewareIndex: 0,
 		middlewares:     customTransport.middlewares,
 		transport:       customTransport.transport,
@@ -60,5 +59,5 @@ func (customTransport customTransport) RoundTrip(req *http.Request) (*http.Respo
 	}
 
 	reqClone := req.Clone(req.Context())
-	return chain.Next(reqClone)
+	return pipeline.Next(reqClone)
 }
