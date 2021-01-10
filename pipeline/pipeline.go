@@ -4,60 +4,50 @@ import "net/http"
 
 type Pipeline interface {
 	Next(req *http.Request) (*http.Response, error)
-	Request() *http.Request
 }
 
 type Middleware interface {
-	Intercept(Pipeline) (*http.Response, error)
+	Intercept(Pipeline, *http.Request) (*http.Response, error)
 }
 
 type customTransport struct {
 	http.Transport
-	transport   http.RoundTripper
-	middlewares []Middleware
+	middlewarePipeline *MiddlewarePipeline
 }
 
-func NewCustomTransport(middlewares ...Middleware) *customTransport {
-	return &customTransport{
-		middlewares: middlewares,
-		transport:   http.DefaultTransport,
-	}
-}
-
-type middlewarePipeline struct {
+type MiddlewarePipeline struct {
 	middlewareIndex int
 	transport       http.RoundTripper
 	request         *http.Request
 	middlewares     []Middleware
 }
 
-func (pipeline *middlewarePipeline) Request() *http.Request {
-	return pipeline.request
+func NewCustomTransport(middlewares ...Middleware) *customTransport {
+	return &customTransport{
+		middlewarePipeline: &MiddlewarePipeline{
+			middlewareIndex: 0,
+			transport:       http.DefaultTransport,
+			middlewares:     middlewares,
+		},
+	}
 }
 
-func (pipeline *middlewarePipeline) incrementMiddlewareIndex() {
+func (pipeline *MiddlewarePipeline) incrementMiddlewareIndex() {
 	pipeline.middlewareIndex++
 }
 
-func (pipeline *middlewarePipeline) Next(req *http.Request) (*http.Response, error) {
+func (pipeline *MiddlewarePipeline) Next(req *http.Request) (*http.Response, error) {
 	if pipeline.middlewareIndex < len(pipeline.middlewares) {
 		middleware := pipeline.middlewares[pipeline.middlewareIndex]
 
 		pipeline.incrementMiddlewareIndex()
-		return middleware.Intercept(pipeline)
+		return middleware.Intercept(pipeline, req)
 	}
 
 	return pipeline.transport.RoundTrip(req)
 }
 
-func (customTransport *customTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	pipeline := &middlewarePipeline{
-		middlewareIndex: 0,
-		middlewares:     customTransport.middlewares,
-		transport:       customTransport.transport,
-		request:         req,
-	}
-
+func (transport *customTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	reqClone := req.Clone(req.Context())
-	return pipeline.Next(reqClone)
+	return transport.middlewarePipeline.Next(reqClone)
 }

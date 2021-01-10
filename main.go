@@ -10,11 +10,11 @@ import (
 	"github.com/jobala/middleware_pipeline/pipeline"
 )
 
-type StarsMiddleware struct{}
-type HashMiddleware struct{}
+type BearerMiddleware struct{}
+type ContentTypeMiddleware struct{}
 
-func (s StarsMiddleware) Intercept(pipeline pipeline.Pipeline) (*http.Response, error) {
-	req := pipeline.Request()
+// Adds authorization header
+func (s BearerMiddleware) Intercept(pipeline pipeline.Pipeline, req *http.Request) (*http.Response, error) {
 	req.Header.Add("Authorization", "Bearer token")
 
 	body, _ := httputil.DumpRequest(req, true)
@@ -22,8 +22,8 @@ func (s StarsMiddleware) Intercept(pipeline pipeline.Pipeline) (*http.Response, 
 	return pipeline.Next(req)
 }
 
-func (h HashMiddleware) Intercept(pipeline pipeline.Pipeline) (*http.Response, error) {
-	req := pipeline.Request()
+// Adds ContentType
+func (h ContentTypeMiddleware) Intercept(pipeline pipeline.Pipeline, req *http.Request) (*http.Response, error) {
 	req.Header.Add("Content-Type", "application/json")
 
 	body, _ := httputil.DumpRequest(req, true)
@@ -32,7 +32,7 @@ func (h HashMiddleware) Intercept(pipeline pipeline.Pipeline) (*http.Response, e
 }
 
 func main() {
-	transport := pipeline.NewCustomTransport(&StarsMiddleware{}, &HashMiddleware{})
+	transport := pipeline.NewCustomTransport(&BearerMiddleware{}, &ContentTypeMiddleware{})
 	transport.MaxIdleConns = 10
 	transport.IdleConnTimeout = 30 * time.Second
 
