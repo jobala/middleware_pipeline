@@ -6,7 +6,7 @@ type Pipeline interface {
 	Next(req *http.Request) (*http.Response, error)
 }
 
-type Middleware interface {
+type middleware interface {
 	Intercept(Pipeline, *http.Request) (*http.Response, error)
 }
 
@@ -19,16 +19,20 @@ type MiddlewarePipeline struct {
 	middlewareIndex int
 	transport       http.RoundTripper
 	request         *http.Request
-	middlewares     []Middleware
+	middlewares     []middleware
 }
 
-func NewCustomTransport(middlewares ...Middleware) *customTransport {
+func NewCustomTransport(middlewares ...middleware) *customTransport {
 	return &customTransport{
-		middlewarePipeline: &MiddlewarePipeline{
-			middlewareIndex: 0,
-			transport:       http.DefaultTransport,
-			middlewares:     middlewares,
-		},
+		middlewarePipeline: newMiddlewarePipeline(middlewares),
+	}
+}
+
+func newMiddlewarePipeline(middlewares []middleware) *MiddlewarePipeline {
+	return &MiddlewarePipeline{
+		middlewareIndex: 0,
+		transport:       http.DefaultTransport,
+		middlewares:     middlewares,
 	}
 }
 
