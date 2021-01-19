@@ -14,11 +14,11 @@ type middleware interface {
 
 type customTransport struct {
 	http.Transport
-	middlewarePipeline *MiddlewarePipeline
+	middlewarePipeline *middlewarePipeline
 }
 
 // MiddlewarePipeline defines the datastructure used to model the pipeline
-type MiddlewarePipeline struct {
+type middlewarePipeline struct {
 	middlewareIndex int
 	transport       http.RoundTripper
 	request         *http.Request
@@ -32,20 +32,20 @@ func NewCustomTransport(middlewares ...middleware) *customTransport {
 	}
 }
 
-func newMiddlewarePipeline(middlewares []middleware) *MiddlewarePipeline {
-	return &MiddlewarePipeline{
+func newMiddlewarePipeline(middlewares []middleware) *middlewarePipeline {
+	return &middlewarePipeline{
 		middlewareIndex: 0,
 		transport:       http.DefaultTransport,
 		middlewares:     middlewares,
 	}
 }
 
-func (pipeline *MiddlewarePipeline) incrementMiddlewareIndex() {
+func (pipeline *middlewarePipeline) incrementMiddlewareIndex() {
 	pipeline.middlewareIndex++
 }
 
 // Next moves the request object through middlewares in the pipeline
-func (pipeline *MiddlewarePipeline) Next(req *http.Request) (*http.Response, error) {
+func (pipeline *middlewarePipeline) Next(req *http.Request) (*http.Response, error) {
 	if pipeline.middlewareIndex < len(pipeline.middlewares) {
 		middleware := pipeline.middlewares[pipeline.middlewareIndex]
 
