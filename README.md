@@ -14,6 +14,15 @@ func (s AuthorizationMiddleware) Intercept(pipeline pipeline.Pipeline, req *http
 
 	body, _ := httputil.DumpRequest(req, true)
 	log.Println(fmt.Sprintf("%s", string(body)))
+
+	/*
+	If you want to perform an action based on the response, do the following
+	
+	resp, err = pipeline.Next
+	// perform some action
+
+	return resp, err
+	*/
 	return pipeline.Next(req)
 }
 ```
