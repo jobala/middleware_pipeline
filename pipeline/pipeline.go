@@ -1,7 +1,9 @@
+// Package pipeline provides support for chaining HTTP Client middlewares
 package pipeline
 
 import "net/http"
 
+// Pipeline interface
 type Pipeline interface {
 	Next(req *http.Request) (*http.Response, error)
 }
@@ -15,6 +17,7 @@ type customTransport struct {
 	middlewarePipeline *MiddlewarePipeline
 }
 
+// MiddlewarePipeline defines the datastructure used to model the pipeline
 type MiddlewarePipeline struct {
 	middlewareIndex int
 	transport       http.RoundTripper
@@ -22,6 +25,7 @@ type MiddlewarePipeline struct {
 	middlewares     []middleware
 }
 
+// NewCustomTransport creates a transport object with a middleware pipeline
 func NewCustomTransport(middlewares ...middleware) *customTransport {
 	return &customTransport{
 		middlewarePipeline: newMiddlewarePipeline(middlewares),
@@ -40,6 +44,7 @@ func (pipeline *MiddlewarePipeline) incrementMiddlewareIndex() {
 	pipeline.middlewareIndex++
 }
 
+// Next moves the request object through middlewares in the pipeline
 func (pipeline *MiddlewarePipeline) Next(req *http.Request) (*http.Response, error) {
 	if pipeline.middlewareIndex < len(pipeline.middlewares) {
 		middleware := pipeline.middlewares[pipeline.middlewareIndex]
